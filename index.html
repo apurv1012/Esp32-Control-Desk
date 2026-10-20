@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ESP32 Control Desk</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <h1>ESP32 Control Desk</h1>
+    <div class="conn-group">
+      <span id="statusDot" class="status-dot status-disconnected" title="Disconnected"></span>
+      <span id="statusText">Disconnected</span>
+      <select id="baudSelect" title="Baud rate">
+        <option value="921600">921600</option>
+        <option value="460800">460800</option>
+        <option value="115200" selected>115200</option>
+        <option value="74880">74880</option>
+        <option value="57600">57600</option>
+        <option value="38400">38400</option>
+        <option value="9600">9600</option>
+      </select>
+      <button id="connectBtn">Connect</button>
+      <button id="disconnectBtn" disabled>Disconnect</button>
+      <button id="themeBtn" title="Toggle light/dark theme">&#9788;</button>
+    </div>
+  </header>
+
+  <div id="unsupportedBanner" class="banner hidden">
+    This browser does not support the Web Serial API. Open this page in
+    <strong>Chrome</strong>, <strong>Edge</strong>, or another Chromium-based browser to use the control desk.
+  </div>
+
+  <main class="layout">
+    <section class="left-pane">
+
+      <div class="panel">
+        <h2>Device Control</h2>
+        <div class="row">
+          <button id="softResetBtn" disabled>Soft Reset</button>
+          <button id="bootloaderResetBtn" disabled>Reset to Bootloader</button>
+        </div>
+        <details class="manual-signals">
+          <summary>Manual DTR / RTS (advanced)</summary>
+          <div class="row">
+            <label><input type="checkbox" id="dtrToggle" disabled /> DTR</label>
+            <label><input type="checkbox" id="rtsToggle" disabled /> RTS</label>
+          </div>
+          <p class="hint">Use these if your board's auto-reset wiring is non-standard and the buttons above don't behave as expected.</p>
+        </details>
+        <p class="hint">Boot mode: <span id="bootModeText">Unknown</span></p>
+      </div>
+
+      <div class="panel">
+        <h2>Chip Info</h2>
+        <div class="row">
+          <button id="chipInfoBtn" disabled>Read Chip Info</button>
+        </div>
+        <dl class="kv" id="chipInfoList">
+          <dt>Chip</dt><dd id="infoChip">&ndash;</dd>
+        </dl>
+      </div>
+
+      <div class="panel">
+        <h2>Flash Firmware</h2>
+
+        <div class="row">
+          <button id="pickFolderBtn" disabled>Select Build Folder (flash_args)</button>
+          <button id="addFileBtn" disabled>Add File Manually</button>
+        </div>
+        <p class="hint" id="folderHint">No folder selected.</p>
+
+        <table class="flash-table" id="flashTable">
+          <thead>
+            <tr><th>Offset</th><th>File</th><th>Size</th><th></th></tr>
+          </thead>
+          <tbody id="flashTableBody"></tbody>
+        </table>
+
+        <div class="row flash-settings">
+          <label>Mode
+            <select id="flashModeSelect">
+              <option value="keep" selected>keep</option>
+              <option value="qio">qio</option>
+              <option value="qout">qout</option>
+              <option value="dio">dio</option>
+              <option value="dout">dout</option>
+            </select>
+          </label>
+          <label>Freq
+            <select id="flashFreqSelect">
+              <option value="keep" selected>keep</option>
+              <option value="80m">80m</option>
+              <option value="40m">40m</option>
+              <option value="26m">26m</option>
+              <option value="20m">20m</option>
+            </select>
+          </label>
+          <label>Size
+            <select id="flashSizeSelect">
+              <option value="keep" selected>keep</option>
+              <option value="1MB">1MB</option>
+              <option value="2MB">2MB</option>
+              <option value="4MB">4MB</option>
+              <option value="8MB">8MB</option>
+              <option value="16MB">16MB</option>
+            </select>
+          </label>
+          <label><input type="checkbox" id="eraseAllCheck" /> Erase all before flashing</label>
+        </div>
+
+        <div class="row">
+          <button id="flashBtn" disabled>Flash</button>
+          <button id="eraseFlashBtn" disabled>Erase Flash</button>
+        </div>
+
+        <div class="progress-wrap hidden" id="progressWrap">
+          <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+          <span id="progressText">0%</span>
+        </div>
+      </div>
+
+    </section>
+
+    <section class="right-pane">
+      <div class="panel terminal-panel">
+        <div class="row terminal-toolbar">
+          <h2>Serial Terminal</h2>
+          <label><input type="checkbox" id="timestampToggle" /> Timestamps</label>
+          <input id="filterInput" type="text" placeholder="Filter (e.g. ERROR)" />
+          <button id="clearTermBtn">Clear</button>
+          <button id="exportLogBtn">Export Log</button>
+        </div>
+        <div id="terminal"></div>
+        <form id="sendForm" class="row send-row">
+          <input id="sendInput" type="text" placeholder="Type a command and press Enter..." disabled />
+          <select id="lineEndingSelect">
+            <option value="">None</option>
+            <option value="\n" selected>\n</option>
+            <option value="\r">\r</option>
+            <option value="\r\n">\r\n</option>
+          </select>
+          <button type="submit" id="sendBtn" disabled>Send</button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="footerMsg">Ready.</span>
+  </footer>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
