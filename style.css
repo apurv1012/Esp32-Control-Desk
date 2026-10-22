@@ -48,6 +48,19 @@ body {
 }
 .topbar h1 { font-size: 16px; margin: 0; }
 
+.brand { display: flex; align-items: center; gap: 10px; }
+
+.logo-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  background: #15171b; /* fixed dark chip so the white logo mark reads in both themes */
+}
+.logo-img { height: 20px; width: auto; display: block; }
+
 .conn-group { display: flex; align-items: center; gap: 8px; }
 
 .status-dot {

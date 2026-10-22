@@ -4,12 +4,16 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>ESP32 Control Desk</title>
+<link rel="icon" href="assets/logo.png" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
 <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header class="topbar">
-    <h1>ESP32 Control Desk</h1>
+    <div class="brand">
+      <span class="logo-badge"><img src="assets/logo.png" alt="Yantrify" class="logo-img" /></span>
+      <h1>ESP32 Control Desk</h1>
+    </div>
     <div class="conn-group">
       <span id="statusDot" class="status-dot status-disconnected" title="Disconnected"></span>
       <span id="statusText">Disconnected</span>
@@ -60,6 +64,8 @@
         </div>
         <dl class="kv" id="chipInfoList">
           <dt>Chip</dt><dd id="infoChip">&ndash;</dd>
+          <dt>MAC</dt><dd id="infoMac">&ndash;</dd>
+          <dt>Flash Size</dt><dd id="infoFlashSize">&ndash;</dd>
         </dl>
       </div>
 
@@ -115,6 +121,16 @@
           <button id="flashBtn" disabled>Flash</button>
           <button id="eraseFlashBtn" disabled>Erase Flash</button>
         </div>
+
+        <details class="manual-signals">
+          <summary>Backup / Read Flash (advanced)</summary>
+          <div class="row">
+            <label>Offset <input type="text" id="readOffsetInput" value="0x0" size="10" /></label>
+            <label>Length <input type="text" id="readLengthInput" value="0x400000" size="10" /></label>
+            <button id="readFlashBtn" disabled>Read &amp; Download .bin</button>
+          </div>
+          <p class="hint">Reads raw bytes from the chip's flash and downloads them as a .bin file &mdash; useful for backing up firmware before re-flashing. Default length (0x400000 = 4MB) may need adjusting to your board's actual flash size.</p>
+        </details>
 
         <div class="progress-wrap hidden" id="progressWrap">
           <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>

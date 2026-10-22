@@ -67,6 +67,12 @@ let reader = null;          // ReadableStreamDefaultReader while in "monitor" mo
 let readLoopPromise = null;
 let keepReading = false;
 let isFlashing = false;
+let monitorBaud = 115200;   // the baud the port was opened at for monitoring — NOT
+                             // necessarily today's baudSelect value, which the user
+                             // may bump up before flashing for a faster transfer.
+                             // Reopening the monitor always uses this, so the baud
+                             // dropdown can be changed before a flash without
+                             // breaking the terminal afterward.
 
 // Flash queue: [{ offset: "0x1000", name: "app.bin", size: 12345, file: File }]
 let flashQueue = [];
@@ -181,7 +187,8 @@ connectBtn.addEventListener("click", async () => {
   try {
     setStatus("connecting", "Connecting...");
     port = await navigator.serial.requestPort();
-    await port.open({ baudRate: parseInt(baudSelect.value, 10) });
+    monitorBaud = parseInt(baudSelect.value, 10);
+    await port.open({ baudRate: monitorBaud });
     setStatus("connected", "Connected");
     setConnectedUIState(true);
     footerMsg.textContent = "Connected. Watching for serial output...";
@@ -339,9 +346,13 @@ rtsToggle.addEventListener("change", () => setSignals(dtrToggle.checked, rtsTogg
 // ---------------------------------------------------------------------------
 chipInfoBtn.addEventListener("click", async () => {
   await withExclusiveTransport(async (loader) => {
-    const chipName = await loader.main("no_reset");
+    // Default reset mode: lets esptool-js auto-reset the board into the
+    // bootloader itself, same as Flash does, rather than requiring it to
+    // already be sitting in bootloader mode.
+    const chipName = await loader.main();
     infoChip.textContent = chipName;
     footerMsg.textContent = `Chip detected: ${chipName}`;
+    await loader.after("hard_reset");
   });
 });
 
@@ -490,9 +501,15 @@ function formatBytes(n) {
 // Flashing / erasing — hands the port over to esptool-js for the duration
 // ---------------------------------------------------------------------------
 
-// Pauses the terminal's read loop, builds a Transport + ESPLoader around the
-// already-open port, runs `work(loader, transport)`, then always tears the
-// loader down and resumes the terminal — even if `work` throws.
+// Pauses the terminal's read loop, hands the port to esptool-js for the
+// duration of `work(loader, transport)`, then always tears the loader down
+// and resumes the terminal — even if `work` throws.
+//
+// esptool-js's ESPLoader.main() opens the port itself (via
+// transport.connect()) and expects it to be CLOSED on entry — calling
+// port.open() on an already-open port throws and main() just hangs. So the
+// port — which we hold open for the live serial monitor — must be closed
+// here first and left for esptool-js to reopen.
 async function withExclusiveTransport(work) {
   if (!port || isFlashing) return;
   isFlashing = true;
@@ -501,6 +518,12 @@ async function withExclusiveTransport(work) {
   chipInfoBtn.disabled = true;
 
   await stopReading();
+
+  try {
+    await port.close();
+  } catch (err) {
+    console.warn("Error while closing port before handing to esptool-js:", err);
+  }
 
   const transport = new Transport(port, true);
   const loader = new ESPLoader({
@@ -526,11 +549,14 @@ async function withExclusiveTransport(work) {
     flashBtn.disabled = !port || flashQueue.length === 0;
     eraseFlashBtn.disabled = !port;
 
-    // esptool-js may leave the port closed after disconnect(); reopen it
-    // so the terminal can keep monitoring the board.
+    // esptool-js may leave the port closed after disconnect(); reopen it at
+    // the ORIGINAL monitor baud (not today's baudSelect.value, which may
+    // have been bumped up just for this flash) so the app's own console
+    // output — usually printed at a fixed rate like 115200 regardless of
+    // the flash transfer speed — is still readable afterward.
     try {
       if (port && !port.readable) {
-        await port.open({ baudRate: parseInt(baudSelect.value, 10) });
+        await port.open({ baudRate: monitorBaud });
       }
       startReading();
     } catch (err) {
